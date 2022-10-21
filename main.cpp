@@ -1,29 +1,30 @@
 #include <GL/freeglut.h>
+#include <vector>
 #include "src/glm/glm.cpp"
 #include "src/trackball/trackball.cpp"
-#include "data/materials.txt"
+#include "src/modelMover/modelMover.cpp"
+#include "src/modelwork/modelObj.cpp"
+
 
 using namespace std;
 
 // Globals
 int screenWidth = 800, screenHeight = 680;
 
-bool trackCamera = false, trackLight = false;
-
-GLfloat normalSmooth = 0.0;
+bool trackCamera = false, trackLight = false, isPaused = true;
 
 GLfloat lastTrackballPos[3] = {0,0,0};
 GLfloat trackballMatrix[16] = {1,0,0,0,    0,1,0,0,    0,0,1,0,    0,0,0,1};
 GLfloat lastLightPos[3] = {0,0,0};
 GLfloat lightMatrix[16] = {1,0,0,0,    0,1,0,0,    0,0,1,0,    0,0,0,1};
 
-GLMmodel* currentObject;
+vector<GLMmodel> objects;
 int currentMaterial = 0;
 
 
 // Lighting Global Values
-GLfloat global_ambient[4] = {0.2, 0.2, 0.2, 1.0};
-GLfloat light0_ambient[4] = {0.2, 0.2, 0.2, 1.0};
+GLfloat global_ambient[4] = {1.0, 1.0, 1.0, 1.0};
+GLfloat light0_ambient[4] = {0.4, 0.4, 0.4, 1.0};
 GLfloat light0_diffuse[4] = {1.0, 1.0, 1.0, 1.0};
 GLfloat light0_specular[4] = {1.0, 1.0, 1.0, 1.0};
 GLfloat light0_position[4] = {0, 0, 2, 0.0};
@@ -43,14 +44,23 @@ void display() {
     glTranslatef(0,0,-1);
     trackballMult(trackballMatrix);
 
-    glmDraw(currentObject, GLM_SMOOTH | GLM_MATERIAL);
+    for (GLMmodel obj : objects) {
+        glmDraw(&obj, GLM_SMOOTH | GLM_MATERIAL);
+    }
 
     glFlush();
     glutSwapBuffers();
 }
 
 void idle() {
-
+    if (isPaused) {
+        return;
+    }
+    for (GLMmodel obj : objects) {
+        int fwd[] = {1,0,0};
+        int ud[] = {0,1,0};
+        congaLine(&obj, fwd, ud);
+    }
 }
 
 void reshape( int w, int h )
@@ -79,17 +89,24 @@ void processKeys(unsigned char key, int x, int y) {
             break;
         case 'S':
             normalSmooth += 1;
-            glmUnitize(currentObject);
-            glmFacetNormals( currentObject );
-            glmVertexNormals( currentObject, normalSmooth );
-            glmSpheremapTexture( currentObject );
+            for (GLMmodel obj : objects) {
+                glmUnitize(&obj);
+                glmFacetNormals(&obj);
+                glmVertexNormals(&obj, normalSmooth);
+                glmSpheremapTexture(&obj);
+            }
             break;
         case 's':
             normalSmooth -= 1;
-            glmUnitize(currentObject);
-            glmFacetNormals( currentObject );
-            glmVertexNormals( currentObject, normalSmooth );
-            glmSpheremapTexture( currentObject );
+            for (GLMmodel obj : objects) {
+                glmUnitize(&obj);
+                glmFacetNormals(&obj);
+                glmVertexNormals(&obj, normalSmooth);
+                glmSpheremapTexture(&obj);
+            }
+            break;
+        case ' ':
+            isPaused = !isPaused;
             break;
         case 'Q':
             exit(0);
@@ -149,71 +166,6 @@ void processButtons(int b, int state, int x, int y) {
     }
 }
 
-void setMaterial(int matType) {
-    //set the current material to the selected value.
-    currentObject->materials[0].name = mat[matType].name;
-    currentObject->materials[0].shininess = mat[matType].shiny;
-    for(int i = 0; i < 4; i++) {
-        currentObject->materials[0].ambient[i] = mat[matType].ambient[i];
-        currentObject->materials[0].diffuse[i] = mat[matType].diffuse[i];
-        currentObject->materials[0].specular[i] = mat[matType].specular[i];
-    }
-}
-
-void getObject(int newObj) {
-    char* objectName;
-    //determine which object the user selected.
-    // file names need to go up two directories because they are called from a different file
-    switch(newObj)
-    {
-        case 200:
-            objectName = "../data/al.obj";
-            break;
-        case 201:
-            objectName = "../data/bunny.obj";
-            break;
-        case 202:
-            objectName = "../data/cow.obj";
-            break;
-        case 203:
-            objectName = "../data/dragon_10k.obj";
-            break;
-        case 204:
-            objectName = "../data/teapot.obj";
-            break;
-        default:
-            objectName = "../data/bunny.obj";
-            break;
-    }
-    //load the selected object into the object variable
-    currentObject = glmReadOBJ(objectName);
-
-    //if the object is Al Capone, we want to draw him using the materials specified in al.mtl
-    //otherwise, draw the object using the current material.
-    if(newObj != 200)
-    {
-        //not al capone
-        currentObject->materials = (GLMmaterial*)malloc(sizeof(GLMmaterial) * 1);
-        setMaterial(currentMaterial);
-    }
-    else
-    {
-        //Al capone...make him cool-lookin'
-        char alMaterialStr[] = "../data/al.mtl";
-        glmReadMTL(currentObject, alMaterialStr);
-    }
-    glmUnitize(currentObject);
-    glmFacetNormals( currentObject );			// Generates per-triangle normals, if not specified
-    //     in the OBJ or SMF file
-    glmVertexNormals( currentObject, normalSmooth );	                // Generates per-vertex normals, if not specified in
-    //     the OBJ or SMF file.  The angle specified is the
-    //     maximum angle to smooth across.  90 is a good
-    //     starting value, 180 will smooth all normals.
-    glmSpheremapTexture( currentObject );
-}
-
-
-
 void init() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
@@ -236,6 +188,17 @@ void init() {
     glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
 }
 
+void modelInit(int numModels) {
+    for (int i = 0; i < numModels; i++) {
+        objects.push_back(*getObject(200));
+    }
+    for (int i = 0; i < objects.size(); i++) {
+        objects[i].position[0] = 50*i;
+        objects[i].position[1] = 0;
+        objects[i].position[2] = 0;
+    }
+}
+
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
@@ -251,6 +214,7 @@ int main(int argc, char** argv) {
     glutKeyboardFunc( processKeys );
 
     init();
+    modelInit(10);
 
     glutMainLoop();
 
