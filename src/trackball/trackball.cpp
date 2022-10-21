@@ -1,21 +1,21 @@
-/* trackball.c                               */
+/* trackball.cpp                             */
 /* -----------                               */
 /*                                           */
 /* Code to implement a simple trackball-like */
 /*     motion control.                       */
 /*                                           */
-/* This expands on Ed Angel's trackball.c    */
+/* This expands on the expansion             */
+/*     of Ed Angel's trackball.c             */
 /*     demo program.  Though I think I've    */
 /*     seen this code (trackball_ptov)       */
 /*     before elsewhere.                     */
 /*********************************************/
 
-// code is from my instructor's instructor
-
 #include <GL/gl.h>
 #include <cmath>
 #include "trackball.h"
 
+// method by instructor's instructor
 void trackball_ptov(int x, int y, int width, int height, float v[3]) {
     float d, a;
 

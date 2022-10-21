@@ -1,5 +1,5 @@
 /*
-      glm.c
+      glm.cpp
       Nate Robins, 1997
       ndr@pobox.com, http://www.pobox.com/~ndr/
 
@@ -10,6 +10,7 @@
  */
 
 // this code was created by my instructor's instructor.
+// adapted to cpp by jgros
 
 
 #include <cmath>
