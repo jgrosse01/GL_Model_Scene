@@ -2,7 +2,10 @@
 // Created by jgros on 10/21/2022.
 //
 
-#ifndef GL_ANIMATED_MODEL_SCENE_MODELOBJ_H
-#define GL_ANIMATED_MODEL_SCENE_MODELOBJ_H
+#ifndef MODELOBJ_H
+#define MODELOBJ_H
 
-#endif //GL_ANIMATED_MODEL_SCENE_MODELOBJ_H
+void setMaterial(GLMmodel* m, int matType);
+GLMmodel* getObject(int newObj);
+
+#endif //MODELOBJ_H
