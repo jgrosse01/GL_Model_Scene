@@ -1,5 +1,7 @@
 #include <GL/freeglut.h>
 #include <vector>
+#include <cstdio>
+#include <iostream>
 #include "src/glm/glm.cpp"
 #include "src/trackball/trackball.cpp"
 #include "src/modelMover/modelMover.cpp"
@@ -18,7 +20,11 @@ GLfloat trackballMatrix[16] = {1,0,0,0,    0,1,0,0,    0,0,1,0,    0,0,0,1};
 GLfloat lastLightPos[3] = {0,0,0};
 GLfloat lightMatrix[16] = {1,0,0,0,    0,1,0,0,    0,0,1,0,    0,0,0,1};
 
-vector<GLMmodel> objects;
+vector<GLMmodel*> objects;
+vector<vector<float>> positions;
+
+int fwd[] = {0,0,1};
+int ud[] = {0,1,0};
 int currentMaterial = 0;
 
 
@@ -38,14 +44,19 @@ void display() {
     glLoadIdentity();
     trackballMult(lightMatrix);
     glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+    glPopMatrix();
 
     // object trackball
     glLoadIdentity();
     glTranslatef(0,0,-1);
     trackballMult(trackballMatrix);
+    glPopMatrix();
 
-    for (GLMmodel obj : objects) {
-        glmDraw(&obj, GLM_SMOOTH | GLM_MATERIAL);
+    for (int i = 0; i < objects.size(); i++) {
+        glTranslatef(positions[i][0], positions[i][1], positions[i][2]);
+        glmDraw(objects[i], GLM_SMOOTH | GLM_MATERIAL);
+        glPopMatrix();
+        cout << &objects[i] << " " << positions[i][0] << "," << positions[i][1] << "," << positions[i][2] << " | \n";
     }
 
     glFlush();
@@ -56,11 +67,7 @@ void idle() {
     if (isPaused) {
         return;
     }
-    for (GLMmodel obj : objects) {
-        int fwd[] = {1,0,0};
-        int ud[] = {0,1,0};
-        congaLine(&obj, fwd, ud);
-    }
+    congaLine(objects, fwd, ud, positions);
 }
 
 void reshape( int w, int h )
@@ -89,20 +96,20 @@ void processKeys(unsigned char key, int x, int y) {
             break;
         case 'S':
             normalSmooth += 1;
-            for (GLMmodel obj : objects) {
-                glmUnitize(&obj);
-                glmFacetNormals(&obj);
-                glmVertexNormals(&obj, normalSmooth);
-                glmSpheremapTexture(&obj);
+            for (GLMmodel* obj : objects) {
+                glmUnitize(obj);
+                glmFacetNormals(obj);
+                glmVertexNormals(obj, normalSmooth);
+                glmSpheremapTexture(obj);
             }
             break;
         case 's':
             normalSmooth -= 1;
-            for (GLMmodel obj : objects) {
-                glmUnitize(&obj);
-                glmFacetNormals(&obj);
-                glmVertexNormals(&obj, normalSmooth);
-                glmSpheremapTexture(&obj);
+            for (GLMmodel* obj : objects) {
+                glmUnitize(obj);
+                glmFacetNormals(obj);
+                glmVertexNormals(obj, normalSmooth);
+                glmSpheremapTexture(obj);
             }
             break;
         case ' ':
@@ -190,12 +197,10 @@ void init() {
 
 void modelInit(int numModels) {
     for (int i = 0; i < numModels; i++) {
-        objects.push_back(*getObject(200));
+        objects.push_back(getObject(200));
     }
     for (int i = 0; i < objects.size(); i++) {
-        objects[i].position[0] = 50*i;
-        objects[i].position[1] = 0;
-        objects[i].position[2] = 0;
+        positions.push_back({0,0, -100-(float)i});
     }
 }
 
